@@ -17,7 +17,6 @@ class RedBlueNim:
             return 2 * self.red_marbles
         else:
             return None
-
     def generate_moves(self, version):
         if version == "standard":
             moves = [(2, 0), (0, 2), (1, 0), (0, 1)]
