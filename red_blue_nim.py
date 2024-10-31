@@ -17,6 +17,7 @@ class RedBlueNim:
             return 2 * self.red_marbles
         else:
             return None
+
     def generate_moves(self, version):
         if version == "standard":
             moves = [(2, 0), (0, 2), (1, 0), (0, 1)]
@@ -34,11 +35,15 @@ class RedBlueNim:
         self.blue_marbles -= blue_remove
         self.current_player = 1 - self.current_player  # Switch player
 
+    def undo_move(self, move):
+        # Undo the move by adding back the marbles removed
+        red_add, blue_add = move
+        self.red_marbles += red_add
+        self.blue_marbles += blue_add
+        self.current_player = 1 - self.current_player  # Switch player back
+
     def evaluate(self):
-        if self.current_player == 0:
-            return 2 * self.red_marbles + 3 * self.blue_marbles
-        else:
-            return 2 * self.red_marbles + 3 * self.blue_marbles
+        return 2 * self.red_marbles + 3 * self.blue_marbles
 
 def minimax(game, depth, alpha, beta, maximizing_player):
     if game.is_game_over() or depth == 0:
@@ -75,10 +80,7 @@ def minimax(game, depth, alpha, beta, maximizing_player):
 
 def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_player="computer", depth=None):
     game = RedBlueNim(red_marbles, blue_marbles)
-    if first_player == "computer":
-        current_player = 1
-    else:
-        current_player = 0
+    current_player = 1 if first_player == "computer" else 0
 
     while not game.is_game_over():
         if game.current_player == current_player:
@@ -117,15 +119,12 @@ if __name__ == "__main__":
 
     red_marbles = int(sys.argv[1])
     blue_marbles = int(sys.argv[2])
-    version = "standard"
-    first_player = "computer"
-    depth = None
+    version = sys.argv[3] if len(sys.argv) >= 4 else "standard"
+    first_player = sys.argv[4].lower() if len(sys.argv) >= 5 else "computer"
+    depth = int(sys.argv[5]) if len(sys.argv) >= 6 else None
 
-    if len(sys.argv) >= 4:
-        version = sys.argv[3]
-    if len(sys.argv) >= 5:
-        first_player = sys.argv[4]
-    if len(sys.argv) >= 6:
-        depth = int(sys.argv[5])
+    if first_player not in {"computer", "human"}:
+        print("Invalid first player. Choose 'computer' or 'human'.")
+        sys.exit(1)
 
     play_red_blue_nim(red_marbles, blue_marbles, version, first_player, depth)
