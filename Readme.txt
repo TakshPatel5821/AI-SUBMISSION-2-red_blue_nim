@@ -3,12 +3,24 @@ UTA ID - 1002248623.
 Language Used - Python 3.10.9
 
 Code Structure : 
-1. state_evaluation(red, blue, is_misere): Calculate the score of the current state based on the quantity of marbles in the red and blue piles.
-2. next_move(red, blue, pile, count): Update the number of marbles in the piles after a move is made.
-3. generate_move(red, blue): Generate all feasible moves in the given state.
-4. comp_move(red, blue, is_misere, depth): Use Minimax to determine the optimal move for the computer player.
-5. minimax(red, blue, is_misere, depth, is_maximizing): Recursive function to determine the optimal move using Minimax.
-6. main(): The main function to run the game.
+1. Attributes:
+            RM (int): Red marbles.
+            BM (int): Blue marbles.
+            CP (int): Current player (0 for human, 1 for computer).
+            version (str): "standard" (last marble wins) or "misere" (last marble loses).
+2. Methods:
+
+            __init__: Initializes marbles, player, and version.
+            is_game_over: Checks if any marble count is zero.
+            get_winner: Determines winner based on version and last move.
+            generate_moves: Lists valid moves as (color, count) tuples.
+            make_move: Executes a move, updates marble count and player.
+            undo_move: Reverses a move, restoring marble count and player.
+            evaluate: Heuristic evaluation favoring human or computer.+
+3. Function: minimax
+            Uses Minimax with alpha-beta pruning to find the best move for the computer or human by evaluating possible game states.
+4. Function: play_red_blue_nim
+            Runs the game loop, prompting human input and selecting computer moves via Minimax or randomly if depth=0.
 
 How to run the code : 
 1. Run the file red_blue_nim.py present in the zip folder.

@@ -1,6 +1,34 @@
-The Minimax algorithm uses an evaluation function to award a certain game state a numerical score. The evaluation function's goal is to calculate how advantageous a specific situation is for the computer player. The state is more beneficial to the computer when the score is higher.
-We constructed a straightforward evaluation function based on the quantity of marbles in the red and blue piles for the game "Red-Blue Nim." We want to reward states that are closer to attaining this goal since the aim is to make the opponent take the last stone.
+The evaluate function provides a heuristic score to guide the AI’s decision-making using a depth-limited Minimax algorithm with alpha-beta pruning. This function considers both the number of remaining marbles and the game version ("standard" or "misere") to help the AI favor moves that maximize its chances of winning within the limited search depth.
 
-This evaluation function's justification is as follows, the state_evaluation function is used to return a score based on the misere rule if the game is over (one of the piles is empty). We wish to prevent such states because in misere mode, the person who grabs the final marble loses. It's a good result because this is the state we want in standard mode.
+Design Goals
+1.Maximize computer’s advantage by prioritizing moves that leave the opponent in an unfavorable position.
+2.Optimize for game version ("standard" or "misere") to reflect different win conditions.
+3.Balance immediate gains with long-term strategy by considering the impact of each move in reducing both red and blue marbles.
+Inputs
+RM (int): Count of remaining red marbles.
+BM (int): Count of remaining blue marbles.
+CP (int): Current player (0 for human, 1 for computer).
+version (str): "standard" (last marble wins) or "misere" (last marble loses).
 
-This evaluation function can help the computer player make better decisions and perform better in the game when used with depth-limited Minimax with alpha-beta pruning.
+Evaluation Logic
+1.Standard Version:
+
+    The goal is for the computer to be in control when the last marble is taken.
+    If both RM and BM are low, favor moves that allow the computer to reach the final move first.
+    Score increases as RM and BM approach zero with the human’s turn next, as it allows the computer to win.
+
+2.Misere Version:
+
+    The goal is to force the human to take the last marble, causing them to lose.
+    In this mode, the score increases for states that limit moves and drive the opponent closer to taking the last marble.
+    Moves that leave one marble of either color score highest, as this sets up an unavoidable loss for the opponent.
+
+3.Heuristic Scoring:
+
+    +10 points for each remaining red or blue marble if it leaves the opponent in an unfavorable position.
+    +50 points for configurations that approach the game’s end in the computer’s favor.
+    -10 points if the current player is forced to take the last marble in "misere" mode.
+
+    
+Output
+Returns a numeric score that indicates the desirability of the current game state, guiding the computer to seek positions that increase its winning chances based on game rules.
