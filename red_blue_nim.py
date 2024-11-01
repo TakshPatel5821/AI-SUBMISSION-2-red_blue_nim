@@ -6,20 +6,25 @@ class RedBlueNim:
         self.red_marbles = red_marbles
         self.blue_marbles = blue_marbles
         self.current_player = 0  # 0 for human, 1 for computer
+        self.human_color = None   # Track the color selected by the human
 
     def is_game_over(self):
         return self.red_marbles == 0 or self.blue_marbles == 0
 
     def get_winner_score(self):
         if self.red_marbles == 0:
-            return 3 * self.blue_marbles  # Computer wins if red marbles are 0
+            return -3 * self.blue_marbles  # Human loses; scoring reflects their loss
         elif self.blue_marbles == 0:
-            return 2 * self.red_marbles  # Human wins if blue marbles are 0
+            return 2 * self.red_marbles  # Computer wins; scoring reflects its gain
         else:
             return None
 
     def generate_moves(self, version):
-        moves = [(0, 1), (0, 2), (1, 1), (1, 2)]
+        if version == "standard":
+            moves = [(0, 2), (1, 2), (0, 1), (1, 1)]  # Order for standard version
+        else:
+            moves = [(1, 1), (0, 1), (1, 2), (0, 2)]  # Inverted order for misère version
+
         valid_moves = []
         for color, count in moves:
             if color == 0 and count <= self.red_marbles:
@@ -82,7 +87,9 @@ def minimax(game, depth, alpha, beta, maximizing_player):
 
 def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_player="computer", depth=None):
     game = RedBlueNim(red_marbles, blue_marbles)
-    current_player = 1 if first_player == "computer" else 0
+
+    # Set the first player
+    game.current_player = 0 if first_player == "human" else 1
 
     while not game.is_game_over():
         print(f"\nCurrent state: Red: {game.red_marbles}, Blue: {game.blue_marbles}")
@@ -92,10 +99,14 @@ def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_playe
             while not valid_move:
                 print("Your turn:")
                 color_choice = input("Which color to remove (red or blue)? ").strip().lower()
+
+                # Determine human's color choice
                 if color_choice == "red":
                     color = 0
+                    game.human_color = "red"  # Human is playing red
                 elif color_choice == "blue":
                     color = 1
+                    game.human_color = "blue"  # Human is playing blue
                 else:
                     print("Invalid color! Choose 'red' or 'blue'.")
                     continue
@@ -103,6 +114,7 @@ def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_playe
                 try:
                     count = int(input("Remove how many marbles (1 or 2)? "))
                     move = (color, count)
+
                     if move in game.generate_moves(version):
                         valid_move = True
                         game.make_move(move)
@@ -110,7 +122,9 @@ def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_playe
                         print("Invalid move! Try again.")
                 except ValueError:
                     print("Please enter a valid number (1 or 2).")
+
         else:  # Computer's turn
+            color = 1 if game.human_color == "red" else 0  # Computer plays the opposite color
             _, best_move = minimax(game, depth, -math.inf, math.inf, True)
             if best_move:
                 game.make_move(best_move)
@@ -131,7 +145,6 @@ def play_red_blue_nim(red_marbles, blue_marbles, version="standard", first_playe
             else:
                 print("\nIt's a draw!")
             break  # Exit loop when the game is over
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
