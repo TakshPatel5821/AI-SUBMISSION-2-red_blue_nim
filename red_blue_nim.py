@@ -1,5 +1,6 @@
 import sys
 import math
+import random  
 
 class RedBlueNim:
     def __init__(self, RM, BM, version="standard"):
@@ -9,21 +10,17 @@ class RedBlueNim:
         self.version = version  # Game version, "standard" or "misere"
 
     def is_game_over(self):
-        # The game ends when either marble count (RM or BM) reaches zero.
         return self.RM == 0 or self.BM == 0
 
     def GWS(self):  # Get winner based on game version and last player
         if self.is_game_over():
             if self.version == "standard":
-                # In standard version, the last player to make a move wins.
                 return "Computer" if self.CP == 0 else "Human"
             elif self.version == "misere":
-                # In misère version, the last player to make a move loses.
                 return "Human" if self.CP == 0 else "Computer"
         return None
 
     def GM(self):  # Generate moves
-        # Sort moves to prioritize removing from the smaller pile first
         moves = [(0, 2), (1, 2), (0, 1), (1, 1)]
         valid_moves = []
         for color, count in moves:
@@ -31,8 +28,6 @@ class RedBlueNim:
                 valid_moves.append((color, count))
             elif color == 1 and count <= self.BM:
                 valid_moves.append((color, count))
-
-        # Sort moves to prioritize the color with fewer marbles
         valid_moves.sort(key=lambda x: (self.RM if x[0] == 0 else self.BM))
         return valid_moves
 
@@ -53,11 +48,9 @@ class RedBlueNim:
         self.CP = 1 - self.CP  # Switch player back
 
     def evaluate(self):
-        # Evaluate the game based on whether it's standard or misère
         if self.is_game_over():
             # Winning or losing state
             return 1000 if self.GWS() == "Computer" else -1000
-        # For non-terminal states, apply heuristic that favors reducing smaller pile
         smaller_pile_bonus = 5 if self.RM < self.BM else (-5 if self.BM < self.RM else 0)
         return (2 * self.RM + 3 * self.BM + smaller_pile_bonus) * (1 if self.CP == 1 else -1)
 
@@ -94,10 +87,11 @@ def minimax(game, depth, alpha, beta, maximizing_player):
                 break
         return min_eval, best_move
 
+import random  # Add this import at the top if not already present
+
 def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
     game = RedBlueNim(RM, BM, version)
-
-    # Set the first player
+    initial_marbles = RM + BM  # Track initial total marbles
     game.CP = 0 if FP == "human" else 1
 
     while not game.is_game_over():
@@ -109,7 +103,6 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                 print("Your turn:")
                 color_choice = input("Which color to remove (red or blue)? ").strip().lower()
 
-                # Determine human's color choice
                 if color_choice == "red":
                     color = 0
                 elif color_choice == "blue":
@@ -131,7 +124,21 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                     print("Please enter a valid number (1 or 2).")
 
         else:  # Computer's turn
-            _, best_move = minimax(game, depth, -math.inf, math.inf, True)
+            if depth == 0:
+                available_moves = game.GM()
+                winning_move = None
+                for move in available_moves:
+                    game.MM(move)
+                    if game.is_game_over() and game.GWS() == "Computer":
+                        winning_move = move
+                    game.UM(move)
+                    if winning_move:
+                        break  # Stop if a winning move is found
+
+                best_move = winning_move if winning_move else random.choice(available_moves)
+            else:
+                _, best_move = minimax(game, depth, -math.inf, math.inf, True)
+
             if best_move:
                 game.MM(best_move)
                 color_str = "red" if best_move[0] == 0 else "blue"
@@ -140,17 +147,16 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                 print("No valid moves for the computer.")
                 break  # Exit if no valid moves for the computer
 
-        # Check if the game is over and display the winner if so
         if game.is_game_over():
-            winner_score = game.GWS()
-            if winner_score is not None:
-                if winner_score > 0:
-                    print(f"\nYou win by {winner_score} points!")
-                else:
-                    print(f"\nComputer wins by {-winner_score} points!")
+            winner = game.GWS()
+            if winner:
+                remaining_marbles = game.RM + game.BM
+                points = initial_marbles - remaining_marbles
+                print(f"\n{winner} wins by {points} points!")
             else:
                 print("\nIt's a draw!")
             break  # Exit loop when the game is over
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
