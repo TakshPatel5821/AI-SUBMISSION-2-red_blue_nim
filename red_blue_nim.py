@@ -2,38 +2,41 @@ import sys
 import math
 
 class RedBlueNim:
-    def __init__(self, RM, BM):
-        self.RM = RM #BLUE MARBLE
-        self.BM = BM # RED MARBLE
-        self.CP = 0  # 0 for human, 1 for computer (CUREENT PLAYER)
-        self.HC = None   # Track the color selected by the human
+    def __init__(self, RM, BM, version="standard"):
+        self.RM = RM  # Red marbles
+        self.BM = BM  # Blue marbles
+        self.CP = 0   # 0 for human, 1 for computer (current player)
+        self.version = version  # Game version, "standard" or "misere"
 
     def is_game_over(self):
+        # The game ends when either marble count (RM or BM) reaches zero.
         return self.RM == 0 or self.BM == 0
 
-    def GWS(self):   #THIS IS FOR WINNER SCORE
-        if self.RM == 0:
-            return -3 * self.BM  # Human loses; scoring reflects their loss
-        elif self.BM == 0:
-            return 2 * self.RM  # Computer wins; scoring reflects its gain
-        else:
-            return None
+    def GWS(self):  # Get winner based on game version and last player
+        if self.is_game_over():
+            if self.version == "standard":
+                # In standard version, the last player to make a move wins.
+                return "Computer" if self.CP == 0 else "Human"
+            elif self.version == "misere":
+                # In misère version, the last player to make a move loses.
+                return "Human" if self.CP == 0 else "Computer"
+        return None
 
-    def GM(self, version): #GENERATE MOVES
-        if version == "standard":
-            moves = [(0, 2), (1, 2), (0, 1), (1, 1)]  # Order for standard version
-        else:
-            moves = [(1, 1), (0, 1), (1, 2), (0, 2)]  # Inverted order for misère version
-
+    def GM(self):  # Generate moves
+        # Sort moves to prioritize removing from the smaller pile first
+        moves = [(0, 2), (1, 2), (0, 1), (1, 1)]
         valid_moves = []
         for color, count in moves:
             if color == 0 and count <= self.RM:
                 valid_moves.append((color, count))
             elif color == 1 and count <= self.BM:
                 valid_moves.append((color, count))
+
+        # Sort moves to prioritize the color with fewer marbles
+        valid_moves.sort(key=lambda x: (self.RM if x[0] == 0 else self.BM))
         return valid_moves
 
-    def MM(self, move):    #THIS IS FOR MAKE MOVE
+    def MM(self, move):  # Make move
         color, count = move
         if color == 0:
             self.RM -= count
@@ -41,7 +44,7 @@ class RedBlueNim:
             self.BM -= count
         self.CP = 1 - self.CP  # Switch player
 
-    def UM(self, move):   #UNDO MOVE
+    def UM(self, move):  # Undo move
         color, count = move
         if color == 0:
             self.RM += count
@@ -50,7 +53,13 @@ class RedBlueNim:
         self.CP = 1 - self.CP  # Switch player back
 
     def evaluate(self):
-        return 2 * self.RM + 3 * self.BM
+        # Evaluate the game based on whether it's standard or misère
+        if self.is_game_over():
+            # Winning or losing state
+            return 1000 if self.GWS() == "Computer" else -1000
+        # For non-terminal states, apply heuristic that favors reducing smaller pile
+        smaller_pile_bonus = 5 if self.RM < self.BM else (-5 if self.BM < self.RM else 0)
+        return (2 * self.RM + 3 * self.BM + smaller_pile_bonus) * (1 if self.CP == 1 else -1)
 
 def minimax(game, depth, alpha, beta, maximizing_player):
     if game.is_game_over() or (depth == 0 if depth is not None else False):
@@ -59,7 +68,7 @@ def minimax(game, depth, alpha, beta, maximizing_player):
     if maximizing_player:
         max_eval = -math.inf
         best_move = None
-        for move in game.GM("standard"):
+        for move in game.GM():
             game.MM(move)
             eval, _ = minimax(game, (depth - 1) if depth is not None else None, alpha, beta, False)
             game.UM(move)
@@ -73,7 +82,7 @@ def minimax(game, depth, alpha, beta, maximizing_player):
     else:
         min_eval = math.inf
         best_move = None
-        for move in game.GM("misere"):
+        for move in game.GM():
             game.MM(move)
             eval, _ = minimax(game, (depth - 1) if depth is not None else None, alpha, beta, True)
             game.UM(move)
@@ -86,7 +95,7 @@ def minimax(game, depth, alpha, beta, maximizing_player):
         return min_eval, best_move
 
 def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
-    game = RedBlueNim(RM, BM)
+    game = RedBlueNim(RM, BM, version)
 
     # Set the first player
     game.CP = 0 if FP == "human" else 1
@@ -103,10 +112,8 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                 # Determine human's color choice
                 if color_choice == "red":
                     color = 0
-                    game.HC = "red"  # Human is playing red
                 elif color_choice == "blue":
                     color = 1
-                    game.HC = "blue"  # Human is playing blue
                 else:
                     print("Invalid color! Choose 'red' or 'blue'.")
                     continue
@@ -115,7 +122,7 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                     count = int(input("Remove how many marbles (1 or 2)? "))
                     move = (color, count)
 
-                    if move in game.GM(version):
+                    if move in game.GM():
                         valid_move = True
                         game.MM(move)
                     else:
@@ -124,7 +131,6 @@ def play_red_blue_nim(RM, BM, version="standard", FP="computer", depth=None):
                     print("Please enter a valid number (1 or 2).")
 
         else:  # Computer's turn
-            color = 1 if game.HC == "red" else 0  # Computer plays the opposite color
             _, best_move = minimax(game, depth, -math.inf, math.inf, True)
             if best_move:
                 game.MM(best_move)
